@@ -1,11 +1,13 @@
 package com.example.login;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -33,9 +35,15 @@ import java.util.Objects;
 
 public class FormCadastro extends AppCompatActivity {
 
-    private EditText edit_nome, edit_email, edit_senha;
+    private EditText edit_nome, edit_email, edit_senha, edit_confirmar_senha;
     private Button bt_cadastrar;
-    String[] mensagens = {"Preencha todos os campos", "Cadastro realizado com sucesso"};
+    private TextView tv_login;
+    String[] mensagens = {
+            "Preencha todos os campos",
+            "Cadastro realizado com sucesso",
+            "As senhas não coincidem",
+            "A senha deve ter pelo menos 6 caractere, uma letra maiúscula, um caractere especial e um número"
+    };
     String usuarioID;
 
     @Override
@@ -59,105 +67,114 @@ public class FormCadastro extends AppCompatActivity {
         bt_cadastrar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String nome= edit_nome.getText().toString();
+                String nome = edit_nome.getText().toString();
                 String email = edit_email.getText().toString();
                 String senha = edit_senha.getText().toString();
-                if(nome.isEmpty() || email.isEmpty() || senha.isEmpty()){
+                String confirmarSenha = edit_confirmar_senha.getText().toString();
 
-                    Snackbar snackbar = Snackbar.make(v,mensagens[0], Snackbar.LENGTH_SHORT);
+                if (nome.isEmpty() || email.isEmpty() || senha.isEmpty() || confirmarSenha.isEmpty()) {
+                    Snackbar snackbar = Snackbar.make(v, mensagens[0], Snackbar.LENGTH_SHORT);
                     snackbar.setBackgroundTint(Color.WHITE);
                     snackbar.setTextColor(Color.BLACK);
                     snackbar.show();
-
-                }else {
+                } else if (!senha.equals(confirmarSenha)) {
+                    Snackbar snackbar = Snackbar.make(v, mensagens[2], Snackbar.LENGTH_LONG);
+                    snackbar.setBackgroundTint(Color.WHITE);
+                    snackbar.setTextColor(Color.BLACK);
+                    snackbar.show();
+                } else if (!isSenhaValida(senha)) {
+                    Snackbar snackbar = Snackbar.make(v, mensagens[3], Snackbar.LENGTH_LONG);
+                    snackbar.setBackgroundTint(Color.WHITE);
+                    snackbar.setTextColor(Color.BLACK);
+                    snackbar.show();
+                } else {
                     CadastrarUsuario(v);
                 }
             }
         });
-    }
-    private void CadastrarUsuario(View v){
 
+        // Configura o listener para a TextView de login
+        tv_login.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FirebaseAuth.getInstance().signOut(); // Adiciona essa linha para deslogar o usuário antes de redirecionar para a tela de login
+                Intent i = new Intent(FormCadastro.this, FormLogin.class);
+                startActivity(i);
+            }
+        });
+    }
+
+    private void CadastrarUsuario(View v) {
         String email = edit_email.getText().toString();
         String senha = edit_senha.getText().toString();
 
         FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, senha).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
-
-                if(task.isSuccessful()){
-
+                if (task.isSuccessful()) {
                     SalvarDadosUsuario();
-                    Snackbar snackbar = Snackbar.make(v,mensagens[1], Snackbar.LENGTH_SHORT);
+                    Snackbar snackbar = Snackbar.make(v, mensagens[1], Snackbar.LENGTH_SHORT);
                     snackbar.setBackgroundTint(Color.WHITE);
                     snackbar.setTextColor(Color.BLACK);
                     snackbar.show();
-
-
-                }else {
+                } else {
                     String erro;
                     try {
-                        throw  task.getException();
-
-                    }catch (FirebaseAuthWeakPasswordException e) {
-
+                        throw task.getException();
+                    } catch (FirebaseAuthWeakPasswordException e) {
                         erro = "Digite uma senha com no mínimo 6 caracteres";
-                    }catch (FirebaseAuthUserCollisionException e) {
+                    } catch (FirebaseAuthUserCollisionException e) {
                         erro = "Esta conta já foi cadastrada";
-                    }catch (FirebaseAuthInvalidCredentialsException e) {
+                    } catch (FirebaseAuthInvalidCredentialsException e) {
                         erro = "Email inválido";
-                    }catch (Exception e){
-                        erro= "Erro ao cadastrar usuário";
-
+                    } catch (Exception e) {
+                        erro = "Erro ao cadastrar usuário";
                     }
-
-                    Snackbar snackbar = Snackbar.make(v,erro, Snackbar.LENGTH_SHORT);
+                    Snackbar snackbar = Snackbar.make(v, erro, Snackbar.LENGTH_SHORT);
                     snackbar.setBackgroundTint(Color.WHITE);
                     snackbar.setTextColor(Color.BLACK);
                     snackbar.show();
                 }
-
             }
         });
-
     }
-    private  void SalvarDadosUsuario(){
+
+    private boolean isSenhaValida(String senha) {
+        // Expressão regular para validar a senha
+        String regex = "^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?])(?=.*\\d).+$";
+        return senha.matches(regex);
+    }
+
+    private void SalvarDadosUsuario() {
         String nome = edit_nome.getText().toString();
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         Map<String, Object> usuarios = new HashMap<>();
-        usuarios.put("nome",nome);
+        usuarios.put("nome", nome);
 
-        usuarioID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        usuarioID = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
 
         DocumentReference documentReference = db.collection("Usuarios").document(usuarioID);
         documentReference.set(usuarios).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void unused) {
-
+                Log.d("db", "Sucesso ao salvar os dados");
             }
-        })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-
-                        Log.d("db", "Sucesso ao salvar os dados");
-
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d("db_error", "Erro ao salvar os dados" + e.toString());
-                    }
-                });
-
-
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.d("db_error", "Erro ao salvar os dados" + e.toString());
+            }
+        });
     }
+
     private void IniciarComponentes() {
         edit_nome = findViewById(R.id.edit_nome);
         edit_email = findViewById(R.id.edit_email);
         edit_senha = findViewById(R.id.edit_senha);
+        edit_confirmar_senha = findViewById(R.id.edit_confirmar_senha); // Adicionado
         bt_cadastrar = findViewById(R.id.bt_cadastrar);
+        tv_login = findViewById(R.id.tv_login);
     }
 }

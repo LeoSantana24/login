@@ -22,7 +22,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 
 public class TelaPrincipal extends AppCompatActivity {
 
-    private TextView nomeUsuario, emailUsuario;
+    private TextView nomeUsuario, emailUsuario, textV;
     private Button bt_deslogar;
     FirebaseFirestore db = FirebaseFirestore.getInstance();
     String usuarioID;
@@ -70,8 +70,8 @@ public class TelaPrincipal extends AppCompatActivity {
     }
 
     private  void IniciarComponentes(){
-        nomeUsuario = findViewById(R.id.textNomeUsuario);
-        emailUsuario = findViewById(R.id.textEmailUsuario);
+        nomeUsuario = findViewById(R.id.TextNomeUsuario);
+        emailUsuario = findViewById(R.id.TextEmailUsuario);
         bt_deslogar = findViewById(R.id.bt_deslogar);
     }
 }

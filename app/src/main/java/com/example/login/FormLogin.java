@@ -3,19 +3,14 @@ package com.example.login;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -30,21 +25,12 @@ public class FormLogin extends AppCompatActivity {
     private EditText edit_email, edit_senha;
     private Button bt_entrar;
     private ProgressBar progressBar;
-    String[] mensagens = {"Preencha todos os campos",};
+    String[] mensagens = {"Preencha todos os campos"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_form_login);
-
-        getSupportActionBar().hide(); // Mover para fora de setOnApplyWindowInsetsListener
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
 
         IniciarComponentes();
 
@@ -55,6 +41,7 @@ public class FormLogin extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        getSupportActionBar().hide();
 
         bt_entrar.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,77 +54,55 @@ public class FormLogin extends AppCompatActivity {
                     snackbar.setBackgroundTint(Color.WHITE);
                     snackbar.setTextColor(Color.BLACK);
                     snackbar.show();
-                }else {
+                } else {
                     AutenticarUsuario(v);
                 }
             }
         });
     }
-    private void AutenticarUsuario(View view){
 
+    private void AutenticarUsuario(View view) {
         String email = edit_email.getText().toString();
         String senha = edit_senha.getText().toString();
 
         FirebaseAuth.getInstance().signInWithEmailAndPassword(email, senha).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
-
-                if(task.isSuccessful()){
+                if (task.isSuccessful()) {
                     progressBar.setVisibility(View.VISIBLE);
-
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-
-                            TelaPrincipal();
-
-                        }
-                    },3000);
-
-                }else{
-                    String erro;
-
-                    try {
-                        throw  task.getException();
-
-                    }catch (Exception e){
-
-                        erro = "Erro ao logar usuário";
-
-                    }
+                    TelaPrincipal();
+                } else {
+                    String erro = "Erro ao logar usuário";
                     Snackbar snackbar = Snackbar.make(view, erro, Snackbar.LENGTH_SHORT);
                     snackbar.setBackgroundTint(Color.WHITE);
                     snackbar.setTextColor(Color.BLACK);
                     snackbar.show();
                 }
-
             }
         });
-
     }
 
     @Override
-    protected void onStart(){
+    protected void onStart() {
         super.onStart();
         FirebaseUser usuarioAtual = FirebaseAuth.getInstance().getCurrentUser();
 
-        if(usuarioAtual != null){
+        if (usuarioAtual != null) {
             TelaPrincipal();
-
         }
     }
 
-    private void TelaPrincipal(){
-
+    private void TelaPrincipal() {
         Intent intent = new Intent(FormLogin.this, TelaPrincipal.class);
         startActivity(intent);
         finish();
     }
+
     private void IniciarComponentes() {
         text_tela_cadastro = findViewById(R.id.text_tela_cadastro);
         edit_email = findViewById(R.id.edit_email);
         edit_senha = findViewById(R.id.edit_senha);
-        bt_entrar = findViewById(R.id.bt_entrar); // Certifique-se de que o ID está correto
+        bt_entrar = findViewById(R.id.bt_entrar);
         progressBar = findViewById(R.id.progressbar);
     }
 }
